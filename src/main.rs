@@ -49,11 +49,11 @@ fn main() {
                 }
 
                 if args.horizontal_flip {
-
+                    flip_horizontal(&file_path);
                 }
 
                 if args.vertical_flip {
-
+                    flip_vertical(&file_path);
                 }
             }
         }
@@ -99,11 +99,11 @@ fn remove_alpha_add_background(png_file_path: &PathBuf) {
 
     let output_file_name = format!("{}_no_alpha.png", input_file_stem);
 
-    save_from_bytes(png_file_path, bytes, output_file_name, String::from("./alpha_removed/"));
+    save_from_bytes(png_file_path, bytes, output_file_name, String::from("./alpha_removed"));
 }
 
 
-fn horizontal_flip(png_file_path: &PathBuf) {
+fn flip_horizontal(png_file_path: &PathBuf) {
     let mut decoder = png::Decoder::new(BufReader::new(File::open(png_file_path).unwrap()));
     let info = decoder.read_header_info().unwrap();
 
@@ -121,10 +121,8 @@ fn horizontal_flip(png_file_path: &PathBuf) {
 
     for i in 0..(info.height as usize) {
         for j in 0..width_limit {
-            let right_val = bytes[row_start + width - (j + 1)];
 
-            bytes[row_start + width - (j + 1)] = bytes[row_start + j];
-            bytes[row_start + j] = right_val;
+            swap_pixels(bytes, (row_start + j) * 4, (row_start + width - (j + 1)) * 4);
         }
 
         row_start = width * i;
@@ -134,10 +132,10 @@ fn horizontal_flip(png_file_path: &PathBuf) {
 
     let output_file_name = format!("{}_horizontal_flip.png", input_file_stem);
 
-    save_from_bytes(png_file_path, bytes, output_file_name, String::from("./horizontal_flip/"));
+    save_from_bytes(png_file_path, bytes, output_file_name, String::from("./horizontal_flip"));
 }
 
-fn vertical_flip(png_file_path: &PathBuf) {
+fn flip_vertical(png_file_path: &PathBuf) {
     let mut decoder = png::Decoder::new(BufReader::new(File::open(png_file_path).unwrap()));
     let info = decoder.read_header_info().unwrap();
 
@@ -155,11 +153,7 @@ fn vertical_flip(png_file_path: &PathBuf) {
 
     for i in 0..width {
         for j in 0..height_limit {
-            let bottom_val = bytes[i + (width * (height - j))]; 
-
-            bytes[i + (width * (height - j))] = bytes[i + (width * j)];
-            
-            bytes[i + (width * j)] = bottom_val;
+            swap_pixels(bytes, (i * 4) + (4 * width * j), (i * 4) + (4 * width * (height - j - 1)));
         }
     }
 
@@ -167,13 +161,13 @@ fn vertical_flip(png_file_path: &PathBuf) {
 
     let output_file_name = format!("{}_vertical_flip.png", input_file_stem);
 
-    save_from_bytes(png_file_path, bytes, output_file_name, String::from("./vertical_flip/"));
+    save_from_bytes(png_file_path, bytes, output_file_name, String::from("./vertical_flip"));
 }
 
 fn save_from_bytes(png_file_path: &PathBuf, bytes: &[u8], output_file_name: String, output_dir: String) {
-    
+    let output_directory = fs::create_dir(&output_dir).unwrap();
 
-    let output_dir_file = format!("{}{}", &output_dir, &output_file_name);
+    let output_dir_file = format!("{}/{}", &output_dir, &output_file_name);
 
     let output_path = Path::new(&output_dir_file);
     let file = File::create(output_path).unwrap();
@@ -214,4 +208,13 @@ fn save_from_bytes(png_file_path: &PathBuf, bytes: &[u8], output_file_name: Stri
     let mut writer = encoder.write_header().unwrap();
     // An array containing a RGBA sequence. First pixel is red and second pixel is black.
     writer.write_image_data(&bytes).unwrap(); // Save
+}
+
+fn swap_pixels(bytes: &mut [u8], index_one: usize, index_two: usize) {
+    for i in 0..4 {
+        let val_2 = bytes[index_two + i];
+
+        bytes[index_two + i] = bytes[index_one + i];
+        bytes[index_one + i] = val_2;
+    }
 }
