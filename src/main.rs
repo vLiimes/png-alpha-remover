@@ -23,6 +23,23 @@ struct Args {
 fn main() {
     let directory = fs::read_dir(".").unwrap();
     let args = Args::parse();
+
+    let output_dir_str_rem_alpha = String::from("./alpha_removed"); 
+    let output_dir_str_flip_horiz = String::from("./horizontal_flip");
+    let output_dir_str_flip_vert = String::from("./vertical_flip");  
+
+    if args.remove_alpha {
+        let output_directory = fs::create_dir(&output_dir_str_rem_alpha).unwrap();
+    }
+
+    if args.horizontal_flip {
+                   
+        let output_directory = fs::create_dir(&output_dir_str_flip_horiz).unwrap();
+    }
+
+    if args.vertical_flip {
+        let output_directory = fs::create_dir(&output_dir_str_flip_vert).unwrap();
+    }
     
     for file in directory {
         if let Ok(file) = file {
@@ -45,22 +62,22 @@ fn main() {
                 if exten_str != "png" { continue; }
 
                 if args.remove_alpha {
-                    remove_alpha_add_background(&file_path);
+                    remove_alpha_add_background(&file_path, &output_dir_str_rem_alpha);
                 }
 
                 if args.horizontal_flip {
-                    flip_horizontal(&file_path);
+                    flip_horizontal(&file_path, &output_dir_str_flip_horiz);
                 }
 
                 if args.vertical_flip {
-                    flip_vertical(&file_path);
+                    flip_vertical(&file_path, &output_dir_str_flip_vert);
                 }
             }
         }
     }
 }
 
-fn remove_alpha_add_background(png_file_path: &PathBuf) {
+fn remove_alpha_add_background(png_file_path: &PathBuf, output_dir_name: &str) {
     let decoder: png::Decoder<BufReader<File>> = png::Decoder::new(BufReader::new(File::open(png_file_path).unwrap()));
 
     let mut reader = decoder.read_info().unwrap();
@@ -99,11 +116,11 @@ fn remove_alpha_add_background(png_file_path: &PathBuf) {
 
     let output_file_name = format!("{}_no_alpha.png", input_file_stem);
 
-    save_from_bytes(png_file_path, bytes, output_file_name, String::from("./alpha_removed"));
+    save_from_bytes(png_file_path, bytes, &output_file_name, output_dir_name);
 }
 
 
-fn flip_horizontal(png_file_path: &PathBuf) {
+fn flip_horizontal(png_file_path: &PathBuf, output_dir_name: &str) {
     let mut decoder = png::Decoder::new(BufReader::new(File::open(png_file_path).unwrap()));
     let info = decoder.read_header_info().unwrap();
 
@@ -132,10 +149,10 @@ fn flip_horizontal(png_file_path: &PathBuf) {
 
     let output_file_name = format!("{}_horizontal_flip.png", input_file_stem);
 
-    save_from_bytes(png_file_path, bytes, output_file_name, String::from("./horizontal_flip"));
+    save_from_bytes(png_file_path, bytes, &output_file_name,  output_dir_name);
 }
 
-fn flip_vertical(png_file_path: &PathBuf) {
+fn flip_vertical(png_file_path: &PathBuf, output_dir_name: &str) {
     let mut decoder = png::Decoder::new(BufReader::new(File::open(png_file_path).unwrap()));
     let info = decoder.read_header_info().unwrap();
 
@@ -161,12 +178,10 @@ fn flip_vertical(png_file_path: &PathBuf) {
 
     let output_file_name = format!("{}_vertical_flip.png", input_file_stem);
 
-    save_from_bytes(png_file_path, bytes, output_file_name, String::from("./vertical_flip"));
+    save_from_bytes(png_file_path, bytes, &output_file_name, output_dir_name);
 }
 
-fn save_from_bytes(png_file_path: &PathBuf, bytes: &[u8], output_file_name: String, output_dir: String) {
-    let output_directory = fs::create_dir(&output_dir).unwrap();
-
+fn save_from_bytes(png_file_path: &PathBuf, bytes: &[u8], output_file_name: &str, output_dir: &str) {
     let output_dir_file = format!("{}/{}", &output_dir, &output_file_name);
 
     let output_path = Path::new(&output_dir_file);
