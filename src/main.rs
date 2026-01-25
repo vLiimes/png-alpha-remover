@@ -17,6 +17,9 @@ struct Args {
     // Flips it vertically (So ACROSS the horizontal axis)
     #[arg(short, long)]
     vertical_flip: bool,
+    
+    #[arg(short, long)]
+    add_file_suffix: bool,
 }
 
 
@@ -62,22 +65,22 @@ fn main() {
                 if exten_str != "png" { continue; }
 
                 if args.remove_alpha {
-                    remove_alpha_add_background(&file_path, &output_dir_str_rem_alpha);
+                    remove_alpha_add_background(&file_path, &output_dir_str_rem_alpha, args.add_file_suffix);
                 }
 
                 if args.horizontal_flip {
-                    flip_horizontal(&file_path, &output_dir_str_flip_horiz);
+                    flip_horizontal(&file_path, &output_dir_str_flip_horiz, args.add_file_suffix);
                 }
 
                 if args.vertical_flip {
-                    flip_vertical(&file_path, &output_dir_str_flip_vert);
+                    flip_vertical(&file_path, &output_dir_str_flip_vert, args.add_file_suffix);
                 }
             }
         }
     }
 }
 
-fn remove_alpha_add_background(png_file_path: &PathBuf, output_dir_name: &str) {
+fn remove_alpha_add_background(png_file_path: &PathBuf, output_dir_name: &str, add_file_suffix: bool) {
     let decoder: png::Decoder<BufReader<File>> = png::Decoder::new(BufReader::new(File::open(png_file_path).unwrap()));
 
     let mut reader = decoder.read_info().unwrap();
@@ -114,13 +117,18 @@ fn remove_alpha_add_background(png_file_path: &PathBuf, output_dir_name: &str) {
 
     let input_file_stem = (png_file_path).file_stem().unwrap().to_str().unwrap();
 
-    let output_file_name = format!("{}_no_alpha.png", input_file_stem);
+    let suffix = match add_file_suffix {
+        true => "_no_alpha",
+        false => ""
+    };
+
+    let output_file_name = format!("{}{}.png", input_file_stem, suffix);
 
     save_from_bytes(png_file_path, bytes, &output_file_name, output_dir_name);
 }
 
 
-fn flip_horizontal(png_file_path: &PathBuf, output_dir_name: &str) {
+fn flip_horizontal(png_file_path: &PathBuf, output_dir_name: &str, add_file_suffix: bool) {
     let mut decoder = png::Decoder::new(BufReader::new(File::open(png_file_path).unwrap()));
     let info = decoder.read_header_info().unwrap();
 
@@ -134,7 +142,7 @@ fn flip_horizontal(png_file_path: &PathBuf, output_dir_name: &str) {
 
     let mut row_start: usize = 0;
     let width = info.width as usize;
-    let width_limit = (width / 2) - 1;
+    let width_limit = width / 2;
 
     for i in 0..(info.height as usize) {
         for j in 0..width_limit {
@@ -147,12 +155,17 @@ fn flip_horizontal(png_file_path: &PathBuf, output_dir_name: &str) {
 
     let input_file_stem = (png_file_path).file_stem().unwrap().to_str().unwrap();
 
-    let output_file_name = format!("{}_horizontal_flip.png", input_file_stem);
+    let suffix = match add_file_suffix {
+        true => "_horizontal_flip",
+        false => ""
+    };
+
+    let output_file_name = format!("{}{}.png", input_file_stem, suffix);
 
     save_from_bytes(png_file_path, bytes, &output_file_name,  output_dir_name);
 }
 
-fn flip_vertical(png_file_path: &PathBuf, output_dir_name: &str) {
+fn flip_vertical(png_file_path: &PathBuf, output_dir_name: &str, add_file_suffix: bool) {
     let mut decoder = png::Decoder::new(BufReader::new(File::open(png_file_path).unwrap()));
     let info = decoder.read_header_info().unwrap();
 
@@ -166,7 +179,7 @@ fn flip_vertical(png_file_path: &PathBuf, output_dir_name: &str) {
 
     let width = info.width as usize;
     let height = info.height as usize;
-    let height_limit = (height / 2) - 1;
+    let height_limit = height / 2;
 
     for i in 0..width {
         for j in 0..height_limit {
@@ -176,7 +189,12 @@ fn flip_vertical(png_file_path: &PathBuf, output_dir_name: &str) {
 
     let input_file_stem = (png_file_path).file_stem().unwrap().to_str().unwrap();
 
-    let output_file_name = format!("{}_vertical_flip.png", input_file_stem);
+    let suffix = match add_file_suffix {
+        true => "_vertical_flip",
+        false => ""
+    };
+
+    let output_file_name = format!("{}{}.png", input_file_stem, suffix);
 
     save_from_bytes(png_file_path, bytes, &output_file_name, output_dir_name);
 }
